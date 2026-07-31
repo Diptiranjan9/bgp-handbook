@@ -25,7 +25,7 @@
 - Contains Version, My AS, Hold Time, BGP Identifier, Optional Paramters
   - BGP Identifier - BGP Router ID (Manually Configured, Highest Active Loopback IP, Highest Physical Interface IP)
 
-![](https://github.com/Diptiranjan9/bgp-handbook/tree/main/snapshots/bgp-openmsg.png)
+![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-openmsg.png)
 
 
 #### BGP Update Msg
@@ -36,7 +36,7 @@
 - Path Attributes
 - NLRI
 
-![](https://github.com/Diptiranjan9/bgp-handbook/tree/main/snapshots/bgp-updatemsg.png)
+![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-updatemsg.png)
 
 #### BGP Notification Msg
 
@@ -44,14 +44,14 @@
 - Error Subcode
 - Data
 
-![](https://github.com/Diptiranjan9/bgp-handbook/tree/main/snapshots/bgp-notificationmsg.png)
+![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-notificationmsg.png)
 
 #### BGP Keepalive Msg
 
 - BGP sends Keepalive messages every one-third of the negotiated Hold Timer. For example, with a Hold Timer of 180 seconds, a Keepalive is sent every 60 seconds. These Keepalive messages continue to be sent as long as the BGP session is established. If no Keepalive or Update message is received from the peer within 180 seconds, the BGP session is terminated.
 
-![](https://github.com/Diptiranjan9/bgp-handbook/tree/main/snapshots/bgp-keepmsg.png)
+![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-keepmsg.png)
 
 #### BGP Route Refresh Msg
 
-![](https://github.com/Diptiranjan9/bgp-handbook/tree/main/snapshots/bgp-refreshmsg.png)
+![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-refreshmsg.png)
