@@ -1,7 +1,3 @@
-<div align="right">
-  <h1><strong> BGP </strong></h1>
-</div>
-
 ## Introduction to BGP
 
 > 💡 **TL;DR:** BGP is the routing protocol that connects different Autonomous Systems (ASes) on the internet. It's a path vector protocol — it makes routing decisions based on prefix attributes (like AS_PATH), not link state or distance, and runs over TCP port 179.
