@@ -1,12 +1,24 @@
-## BGP Message Types
+### BGP Message Types
 
-- Open - used to exchnage capabilities information, timers, ASN, etc.
-- Keepalive - used to maintain the TCP session and make sure its healthy
-- Update - used to send NLRI attributes and preifx information
-- Notifications - ERRORS
-- Route Refresh - To exchange changes in NLRI without having to reset peerings
+- [BGP Message Types](#bgp-message-types)
+  - [BGP MESSAGE FORMAT](#bgp-message-format)
+  - [BGP Open Msg](#bgp-open-msg)
+  - [BGP Update Msg](#bgp-update-msg)
+  - [BGP Notification Msg](#bgp-notification-msg)
+  - [BGP Keepalive Msg](#bgp-keepalive-msg)
+  - [BGP Route Refresh Msg](#bgp-route-refresh-msg)
 
-### BGP MESSAGE FORMAT
+
+
+---
+- **Open** - used to exchnage capabilities information, timers, ASN, etc.
+- **Keepalive** - used to maintain the TCP session and make sure its healthy
+- **Update** - used to send NLRI attributes and preifx information
+- **Notifications** - ERRORS
+- **Route Refresh** - To exchange changes in NLRI without having to reset peerings
+---
+
+#### BGP MESSAGE FORMAT
 
 - Header - Marker, Length, Type
 - Length - Defines the length of the BGP message
