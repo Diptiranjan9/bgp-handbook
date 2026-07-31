@@ -1,59 +1,100 @@
-### BGP Message Types
+## BGP Message Types
+
+> 💡 **TL;DR:** BGP has 5 message types — OPEN (capability exchange), KEEPALIVE (session health), UPDATE (route info), NOTIFICATION (errors), and ROUTE-REFRESH (soft reset). All share a common header (Marker, Length, Type) and ride over the same TCP 179 session.
 
 ---
-- **Open** - used to exchnage capabilities information, timers, ASN, etc.
-- **Keepalive** - used to maintain the TCP session and make sure its healthy
-- **Update** - used to send NLRI attributes and preifx information
-- **Notifications** - ERRORS
-- **Route Refresh** - To exchange changes in NLRI without having to reset peerings
+
+### Message Types Overview
+
+| Message | Purpose |
+|---|---|
+| **OPEN** | Exchange capabilities, timers, ASN, Router ID, etc. |
+| **KEEPALIVE** | Maintain the TCP session and confirm it's healthy |
+| **UPDATE** | Send NLRI, path attributes, and withdrawn prefix info |
+| **NOTIFICATION** | Report errors and terminate the session |
+| **ROUTE-REFRESH** | Request re-advertisement of NLRI without resetting the peering |
+
 ---
 
-#### BGP MESSAGE FORMAT
+### BGP Message Format (Common Header)
 
-- Header - Marker, Length, Type
-- Length - Defines the length of the BGP message
-- Type - What kind of BGP message is this? 
+Every BGP message shares a common header before its type-specific body:
+
+| Field | Size | Purpose |
+|---|---|---|
+| Marker | 16 bytes | Historically for authentication; now typically all 1s (unused/legacy) |
+| Length | 2 bytes | Total length of the BGP message (header + body) |
+| Type | 1 byte | Identifies which of the 5 message types this is |
 
 | Message Type | Type Code |
-|--------------|----------:|
-| BGP Open | 1 |
-| BGP Update | 2 |
-| BGP Notification | 3 |
-| BGP Keepalive | 4 |
-| BGP Route Refresh | 5 |
+|---|---:|
+| OPEN | 1 |
+| UPDATE | 2 |
+| NOTIFICATION | 3 |
+| KEEPALIVE | 4 |
+| ROUTE-REFRESH | 5 |
 
-#### BGP Open Msg
+> 📝 **Note:** ROUTE-REFRESH (type 5) is an extension defined in RFC 2918 — the original RFC 4271 only defines types 1–4.
 
-- Contains Version, My AS, Hold Time, BGP Identifier, Optional Paramters
-  - BGP Identifier - BGP Router ID (Manually Configured, Highest Active Loopback IP, Highest Physical Interface IP)
+---
 
-![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-openmsg.png)
+### OPEN Message
 
+Fields: Version, My AS, Hold Time, BGP Identifier, Optional Parameters.
 
-#### BGP Update Msg
+- **BGP Identifier** — the BGP Router ID, determined by (in order of precedence):
+  1. Manually configured Router ID
+  2. Highest IP among **active** loopback interfaces
+  3. Highest IP among **active** physical interfaces
 
-- Withdrawn Routes Length
-- Wtihdrawn Routes
-- Total Path Attribute Length
-- Path Attributes
-- NLRI
+> ⚠️ **Gotcha:** The interface must be **active/up** to be considered — a configured-but-down loopback with a higher IP won't win Router ID selection.
 
-![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-updatemsg.png)
+![BGP Open Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-openmsg.png)
 
-#### BGP Notification Msg
+---
 
-- Error Code
-- Error Subcode
-- Data
+### UPDATE Message
 
-![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-notificationmsg.png)
+Fields, in order:
+1. Withdrawn Routes Length
+2. Withdrawn Routes
+3. Total Path Attribute Length
+4. Path Attributes
+5. NLRI
 
-#### BGP Keepalive Msg
+> 📝 **Note:** A single UPDATE message can carry withdrawals and new advertisements together, or just one of the two — it doesn't require both every time.
 
-- BGP sends Keepalive messages every one-third of the negotiated Hold Timer. For example, with a Hold Timer of 180 seconds, a Keepalive is sent every 60 seconds. These Keepalive messages continue to be sent as long as the BGP session is established. If no Keepalive or Update message is received from the peer within 180 seconds, the BGP session is terminated.
+![BGP Update Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-updatemsg.png)
 
-![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-keepmsg.png)
+---
 
-#### BGP Route Refresh Msg
+### NOTIFICATION Message
 
-![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-refreshmsg.png)
+Fields: Error Code, Error Subcode, Data.
+
+- Sent when BGP detects an error condition (e.g., malformed message, hold timer expiry, FSM error).
+- **Terminates the session immediately** after being sent/received — this is what triggers the transition back to Idle in the BGP FSM.
+
+![BGP Notification Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-notificationmsg.png)
+
+---
+
+### KEEPALIVE Message
+
+- Sent every **1/3 of the negotiated Hold Timer**. Example: Hold Timer = 180s → KEEPALIVE sent every 60s.
+- Continues for the life of the Established session.
+- If no KEEPALIVE or UPDATE is received within the full Hold Timer (180s in this example), the session is **terminated**.
+
+> 💡 **Tip:** Hold Timer and KEEPALIVE interval are negotiated during the OPEN exchange — both sides take the **lower** of their two configured Hold Timer values.
+
+![BGP Keepalive Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-keepmsg.png)
+
+---
+
+### ROUTE-REFRESH Message
+
+- Allows a router to request that a peer **re-send its full routing table** for a given AFI/SAFI, without tearing down the session.
+- Requires the **Route Refresh capability** to be negotiated in the OPEN message.
+- Common use case: applying a new inbound route-map/policy without a hard reset (`clear ip bgp * soft in` relies on this).
+
+![BGP Route Refresh Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-refreshmsg.png)

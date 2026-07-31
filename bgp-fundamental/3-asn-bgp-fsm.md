@@ -1,21 +1,44 @@
-### AUTONOMOUS SYSTEM NUMBER (ASN)
+## ASN & BGP Neighbor States
 
-- Orginally this was a two byte number (0-65535)
-- Public ASNs 1 - 64511
-- Private ASNs 64512 - 65535
-- Newer implementations of BGP we have a four byte field (RFC 4893)
-- Supported since 12.4 (24) T
-- Four byte ANS 0.0 - 65535. 65535
+> 💡 **TL;DR:** ASNs were originally 2-byte (0–65535), now extended to 4-byte (RFC 6793) to handle exhaustion. BGP neighbor states progress Idle → Connect → Active → OpenSent → OpenConfirm → Established, with all failures dropping straight back to Idle.
 
-### BGP Neighbor State
+---
 
-- Idle - We are just kind of stuck in the begining
-- Connect - BGP speaker is watining for the TCP connection to be completed
-- Active - Trying to initiate a TCP connection with a peer
-- OpenSent - Sent an Open message waiting to hear back from the neighbor
-- OpenConfirm - BGP speaker waiting for a keepalive but we have already exchanged open messages
-- Established - Full peering relationship
+### Autonomous System Number (ASN)
 
+- Originally a **2-byte** number: range **0 – 65535**
+- **Public ASNs:** 1 – 64495 (assigned by IANA/RIRs for global use)
+- **Reserved for documentation/sample code:** 64496 – 64511 (RFC 5398)
+- **Private ASNs:** 64512 – 65534 (for internal/local use, not advertised to the internet)
+- **Reserved:** 0 and 65535
+
+> ⚠️ **Correction:** The commonly quoted "Public 1–64511 / Private 64512–65535" splits things slightly imprecisely — 64496–64511 is actually reserved for documentation (RFC 5398), and 65535 is reserved, not usable as a private ASN.
+
+- Newer implementations use a **4-byte ASN field**, standardized in **RFC 6793** (this obsoleted the original RFC 4893).
+- 4-byte ASN range: **0 – 4,294,967,295** (asplain notation), or written in **asdot** notation as `x.y` where x and y each range 0–65535 (e.g., `1.0` = 65536 in asplain).
+
+---
+
+### BGP Neighbor States (FSM)
+
+| State | Description |
+|---|---|
+| **Idle** | Initial state — BGP refuses incoming connections, waiting for a Start event |
+| **Connect** | BGP speaker is **waiting for the TCP connection to complete** |
+| **Active** | BGP speaker is **trying to initiate** a TCP connection with the peer |
+| **OpenSent** | Sent an OPEN message, waiting to hear back from the neighbor |
+| **OpenConfirm** | OPEN messages already exchanged; waiting for a KEEPALIVE |
+| **Established** | Full peering relationship — routes can be exchanged |
+
+> ⚠️ **Correction:** Connect and Active are commonly mixed up. Per RFC 4271:
+> - **Connect** = waiting for the TCP handshake to **finish** (connection already initiated)
+> - **Active** = actively **trying to initiate** a new TCP connection (typically after a previous attempt failed)
+>
+> It's counterintuitive that "Active" is the retry/failure-recovery state rather than the first attempt — worth memorizing deliberately since the naming doesn't hint at it.
+
+---
+
+### BGP FSM Diagram
 
 ```mermaid
 flowchart TD
@@ -48,10 +71,9 @@ flowchart TD
 ```
 
 **Notes:**
-
-- No "Closing" state in RFC 4271 — all failures go directly back to Idle
-- Connect ↔ Active retry loop exists via ConnectRetryTimer
-- ROUTE-REFRESH is an extension (RFC 2918), not in base spec
+- No "Closing" state in RFC 4271 — all failures go directly back to **Idle**
+- Connect ↔ Active retry loop exists via the **ConnectRetryTimer**
+- ROUTE-REFRESH is an extension (RFC 2918), not in the base spec
 
 #### Sample Router Output
 
