@@ -1,15 +1,5 @@
 ### BGP Message Types
 
-- [BGP Message Types](#bgp-message-types)
-  - [BGP MESSAGE FORMAT](#bgp-message-format)
-  - [BGP Open Msg](#bgp-open-msg)
-  - [BGP Update Msg](#bgp-update-msg)
-  - [BGP Notification Msg](#bgp-notification-msg)
-  - [BGP Keepalive Msg](#bgp-keepalive-msg)
-  - [BGP Route Refresh Msg](#bgp-route-refresh-msg)
-
-
-
 ---
 - **Open** - used to exchnage capabilities information, timers, ASN, etc.
 - **Keepalive** - used to maintain the TCP session and make sure its healthy

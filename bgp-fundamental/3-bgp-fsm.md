@@ -1,8 +1,3 @@
-- [AUTONOMOUS SYSTEM NUMBER (ASN)](#autonomous-system-number-asn)
-- [BGP Neighbor State](#bgp-neighbor-state)
-  - [Sample Router Output](#sample-router-output)
-
-
 ### AUTONOMOUS SYSTEM NUMBER (ASN)
 
 - Orginally this was a two byte number (0-65535)
