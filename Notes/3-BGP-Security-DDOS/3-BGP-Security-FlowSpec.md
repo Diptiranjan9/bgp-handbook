@@ -136,12 +136,16 @@ flowchart TD
 - 12 component types, ordered low-to-high by type, then specificity, then subset
 - 5 actions: rate-limit, traffic-action (terminal/sample), VRF redirect, DSCP mark, IP redirect
 - **Golden rule:** all valid rules go to hardware — there is no single "best path" like unicast BGP
+
 ## Let's Start Lab
+
+### Network Diagram
 
 ![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-flowspec.png)
 
+---
 
-**Before flowspec config**
+### Before Config
 
 bird3-1 op:-
 
@@ -320,10 +324,11 @@ Neighbor        V         AS   MsgRcvd   MsgSent   TblVer  InQ OutQ  Up/Down Sta
 Total number of neighbors 4
 ```
 
-**flowspec config**
-
 ---
-bird3 config:-
+
+### After Config
+
+**bird3 config:-**
 
 bird3 having bydefault master4 and master6 table, so we need to create flow4 table.
 
@@ -422,7 +427,7 @@ protocol static flow_mitigation {
 }
 ```
 
-ios-pe1 cfg:-
+**ios-pe1 cfg:-**
 
 ```sh
 ios-pe1#show run | sec bgp
@@ -466,7 +471,7 @@ router bgp 65000
 ip bgp-community new-format
 ```
 
-junos-pe1 cfg:-
+**junos-pe1 cfg:-**
 
 ```sh
 root@junos-pe2> show configuration protocols bgp | display set
@@ -497,7 +502,7 @@ set policy-options policy-statement to-ibgp term 1 then accept
 set policy-options policy-statement to-ibgp term 10 then reject
 ```
 
-ios-rr1 cfg:-
+**ios-rr1 cfg:-**
 
 ```sh
 ios-rr1#show run | sec bgp
@@ -568,7 +573,7 @@ router bgp 65000
 ip bgp-community new-format
 ```
 
-junos-rr2 cfg:-
+**junos-rr2 cfg:-**
 
 ```sh
 root@junos-rr2> show configuration protocols bgp | display set
@@ -592,7 +597,7 @@ set protocols bgp group rr neighbor 10.0.1.1
 set protocols bgp bgp-identifier 10.0.1.2
 ```
 
-frr-ed1 cfg:-
+**frr-ed1 cfg:-**
 
 ```sh
 hostname frr-ed1
@@ -652,7 +657,7 @@ exit
 end
 ```
 
-frr-ed2 cfg:-
+**frr-ed2 cfg:-**
 
 ```sh
 hostname frr-ed2
@@ -712,11 +717,12 @@ exit
 !
 end
 ```
+
 ---
 
-***After configuration, validation steps***
+### Verification
 
-bird3-1 op:-
+**bird3-1 op:-**
 
 ```log
 bird> show protocols to_pe1
@@ -842,7 +848,7 @@ flow4 { dst 10.10.10.10/32; proto 6; dport 8000; tcp flags 0x2/0x2; length 40..5
         Internal route handling values: 0L 3G 0S id 2
 ```
 
-ios-ed1 op:-
+**ios-ed1 op:-**
 
 ```log
 ios-pe1#show bgp ipv4 flowspec summary
@@ -907,6 +913,8 @@ BGP routing table entry for Dest:10.10.10.10/32,Proto:=17,DPort:=53,Length:>=512
       rx pathid: 0, tx pathid: 0x0
       Updated on Jul 29 2026 16:07:43 UTC
 ```
+
+**junos-pe2 op:-**
 
 ```log
 root@junos-pe2> show bgp summary
@@ -1088,7 +1096,7 @@ inetflow.0: 2 destinations, 4 routes (2 active, 0 holddown, 2 hidden)
                 Thread: junos-main
 ```
 
-frr-ed1 op:-
+**frr-ed1 op:-**
 
 ```log
 frr-ed1# show ip bgp summary
@@ -1178,7 +1186,7 @@ IPset match0xffff89803260 type net,port family IPv4
         to 10.10.10.10:proto 6:8000 (1)
 ```
 
-frr-ed2 op:-
+**frr-ed2 op:-**
 
 ```log
 frr-ed2# show ip bgp  summary
