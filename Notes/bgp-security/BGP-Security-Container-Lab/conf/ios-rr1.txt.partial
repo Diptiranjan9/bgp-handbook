@@ -1,0 +1,118 @@
+!
+no ip domain lookup
+ip cef
+!
+interface Null0
+ no ip unreachables
+!
+interface Loopback0
+ ip address 10.0.1.1 255.255.255.255
+ ip ospf 1 area 0
+!
+interface Ethernet0/1
+ no switchport
+ ip address 10.0.2.1 255.255.255.252
+ ip ospf network point-to-point
+ ip ospf 1 area 0
+ ip ospf cost 1
+!
+interface Ethernet0/2
+ no switchport
+ ip address 10.0.2.9 255.255.255.252
+ ip ospf network point-to-point
+ ip ospf 1 area 0
+ ip ospf cost 1
+!
+interface Ethernet0/3
+ no switchport
+ ip address 10.0.2.5 255.255.255.252
+ ip ospf network point-to-point
+ ip ospf 1 area 0
+ ip ospf cost 1
+!
+interface Ethernet1/0
+!
+interface Ethernet1/1
+ no switchport
+ ip address 10.0.2.21 255.255.255.252
+ ip ospf network point-to-point
+ ip ospf 1 area 0
+ ip ospf cost 1
+!
+router ospf 1
+ router-id 10.0.1.1
+!
+router bgp 65000
+ template peer-policy rr-client
+  route-reflector-client
+  soft-reconfiguration inbound
+  send-community both
+ exit-peer-policy
+ !
+ template peer-policy rr
+  send-community both
+ exit-peer-policy
+ !
+ template peer-session rr-client
+  remote-as 65000
+  update-source Loopback0
+ exit-peer-session
+ !
+ template peer-session rr
+  remote-as 65000
+  update-source Loopback0
+ exit-peer-session
+ !
+ bgp router-id 10.0.1.1
+ bgp log-neighbor-changes
+ no bgp default ipv4-unicast
+ neighbor 10.0.1.2 inherit peer-session rr
+ neighbor 10.0.1.3 inherit peer-session rr-client
+ neighbor 10.0.1.4 inherit peer-session rr-client
+ neighbor 10.0.1.5 inherit peer-session rr-client
+ neighbor 10.0.1.6 inherit peer-session rr-client
+ neighbor 10.0.1.7 inherit peer-session rr-client
+ !
+ address-family ipv4
+  bgp additional-paths send receive
+  bgp additional-paths install
+  neighbor 10.0.1.2 activate
+  neighbor 10.0.1.2 send-community both
+  neighbor 10.0.1.2 inherit peer-policy rr
+  neighbor 10.0.1.3 activate
+  neighbor 10.0.1.3 inherit peer-policy rr-client
+  neighbor 10.0.1.4 activate
+  neighbor 10.0.1.4 inherit peer-policy rr-client
+  neighbor 10.0.1.5 activate
+  neighbor 10.0.1.5 inherit peer-policy rr-client
+  neighbor 10.0.1.6 activate
+  neighbor 10.0.1.6 inherit peer-policy rr-client
+  neighbor 10.0.1.7 activate
+  neighbor 10.0.1.7 inherit peer-policy rr-client
+ exit-address-family
+ !
+ address-family ipv4 flowspec
+  neighbor 10.0.1.2 activate
+  neighbor 10.0.1.2 send-community both
+  neighbor 10.0.1.2 inherit peer-policy rr
+  neighbor 10.0.1.3 activate
+  neighbor 10.0.1.3 inherit peer-policy rr-client
+  neighbor 10.0.1.4 activate
+  neighbor 10.0.1.4 inherit peer-policy rr-client
+  neighbor 10.0.1.5 activate
+  neighbor 10.0.1.5 inherit peer-policy rr-client
+  neighbor 10.0.1.6 activate
+  neighbor 10.0.1.6 inherit peer-policy rr-client
+  neighbor 10.0.1.7 activate
+  neighbor 10.0.1.7 inherit peer-policy rr-client
+ exit-address-family
+!
+ip bgp-community new-format
+!
+ip route 192.0.2.1 255.255.255.255 Null0
+!
+line vty 0 4
+ exec-timeout 35791 0
+ login local
+ transport input ssh
+!

@@ -1,0 +1,170 @@
+system {
+    root-authentication {
+        encrypted-password "$6$lB5c6$Zeud8c6IhCTE6hnZxXBl3ZMZTC2hOx9pxxYUWTHKW1oC32SATWLMH2EXarxWS5k685qMggUfFur1lq.o4p4cg1"; ## SECRET-DATA
+    }
+    services {
+        netconf {
+            ssh;
+        }
+        ssh {
+            root-login allow;
+        }
+    }
+}
+interfaces {
+    eth1 {
+        mtu 1500;
+        unit 0 {
+            family inet {
+                address 10.0.3.6/30;
+            }
+        }
+    }
+    eth2 {
+        mtu 1500;
+        unit 0 {
+            family inet {
+                address 10.0.2.14/30;
+            }
+        }
+    }
+    eth3 {
+        mtu 1500;
+        unit 0 {
+            family inet {
+                address 10.0.3.10/30;
+            }
+        }
+    }
+    eth4 {
+        mtu 1500;
+        unit 0 {
+            family inet {
+                address 10.0.5.5/30;
+            }
+        }
+    }
+    lo0 {
+        unit 0 {
+            family inet {
+                address 10.0.1.6/30;
+            }
+        }
+    }
+}
+policy-options {
+    prefix-list bird3-65001 {
+        10.10.10.10/32;
+        11.11.11.11/32;
+    }
+    policy-statement bird3-65001 {
+        term 1 {
+            from community bird3-65001-1;
+            then {
+                local-preference 120;
+                accept;
+            }
+        }
+        term 2 {
+            from community bird3-65001-2;
+            then {
+                local-preference 80;
+                accept;
+            }
+        }
+        term 3 {
+            from community bird3-65001-rtbh;
+            then {
+                local-preference 200;
+                community + no-export;
+                accept;
+            }
+        }
+        term 4 {
+            from {
+                prefix-list bird3-65001;
+            }
+            then accept;
+        }
+        term 10 {
+            then reject;
+        }
+    }
+    policy-statement to-ibgp {
+        term 0 {
+            from community bird3-65001-rtbh;
+            then {
+                next-hop 192.0.2.1;
+                accept;
+            }
+        }
+        term 1 {
+            from protocol bgp;
+            then {
+                next-hop self;
+                accept;
+            }
+        }
+        term 10 {
+            then reject;
+        }
+    }
+    community bird3-65001-1 members 65001:120;
+    community bird3-65001-2 members 65001:80;
+    community bird3-65001-rtbh members 65001:666;
+    community no-export members no-export;
+}
+routing-options {
+    router-id 10.0.1.6;
+    static {
+        route 192.0.2.1/32 discard;
+    }
+}
+protocols {
+    bgp {
+        group bird3-2 {
+            local-address 10.0.5.5;
+            import bird3-65001;
+            family inet {
+                unicast;
+                flow;
+            }
+            peer-as 65001;
+            local-as 65000;
+            neighbor 10.0.5.6;
+        }
+        group rr-srv {
+            local-address 10.0.1.6;
+            family inet {
+                unicast;
+                flow;
+            }
+            export to-ibgp;
+            peer-as 65000;
+            local-as 65000;
+            neighbor 10.0.1.1;
+            neighbor 10.0.1.2;
+        }
+        bgp-identifier 10.0.1.6;
+    }
+    ospf {
+        area 0.0.0.0 {
+            interface eth1 {
+                interface-type p2p;
+                metric 1;
+            }
+            interface eth2 {
+                interface-type p2p;
+                metric 1;
+            }
+            interface eth3 {
+                interface-type p2p;
+                metric 1;
+            }
+            interface lo0.0 {
+                passive;
+                metric 1;
+            }
+        }
+    }
+}

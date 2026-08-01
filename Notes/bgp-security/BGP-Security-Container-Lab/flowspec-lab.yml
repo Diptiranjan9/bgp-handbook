@@ -1,0 +1,196 @@
+name: flowspec-lab
+
+mgmt:
+  network: mgmt
+  ipv4-subnet: 10.0.0.0/24
+
+topology:
+  nodes:
+    ios-rr1:
+      kind: cisco_iol
+      image: vrnetlab/cisco_iol:l2-17.15
+      type: l2
+      mgmt-ipv4: 10.0.0.251
+      startup-config: ./conf/ios-rr1.txt.partial
+    
+    junos-rr2:
+      kind: juniper_crpd
+      image: arm64v8/crpd:25.4R1.12
+      mgmt-ipv4: 10.0.0.252
+      startup-config: ./conf/junos-rr2.txt
+
+    frr-ed1:
+      kind: linux
+      image: frr-flowspec:10.2.6
+      mgmt-ipv4: 10.0.0.3
+      binds:
+        - ./conf/frr-daemons:/etc/frr/daemons
+        - ./conf/frr-ed1.conf:/etc/frr/frr.conf
+        - ./conf/sync_flowspec_ipt.py:/usr/local/bin/sync_flowspec_ipt.py
+        - ./conf/frr-flowspec-to-iptable.py:/usr/local/bin/frr-flowspec-to-iptable.py
+        - ./conf/frr-urpf.conf:/etc/sysctl.d/99-rpf.conf
+        - ./conf/frr-ed1.sh:/root/frr-ed1.sh
+      exec:
+        - bash /root/frr-ed1.sh
+
+    frr-ed2:
+      kind: linux
+      image: frr-flowspec:10.2.6
+      mgmt-ipv4: 10.0.0.4
+      binds:
+        - ./conf/frr-daemons:/etc/frr/daemons
+        - ./conf/frr-ed2.conf:/etc/frr/frr.conf
+        - ./conf/sync_flowspec_ipt.py:/usr/local/bin/sync_flowspec_ipt.py
+        - ./conf/frr-flowspec-to-iptable.py:/usr/local/bin/frr-flowspec-to-iptable.py
+        - ./conf/frr-urpf.conf:/etc/sysctl.d/99-rpf.conf
+        - ./conf/frr-ed2.sh:/root/frr-ed2.sh
+      exec:
+        - bash /root/frr-ed2.sh
+
+    ios-pe1:
+      kind: cisco_iol
+      image: vrnetlab/cisco_iol:l2-17.15
+      type: l2
+      mgmt-ipv4: 10.0.0.5
+      startup-config: ./conf/ios-pe1.txt.partial
+
+    junos-pe2:
+      kind: juniper_crpd
+      image: arm64v8/crpd:25.4R1.12
+      mgmt-ipv4: 10.0.0.6
+      startup-config: ./conf/junos-pe2.txt
+    
+    rtbh:
+      kind: linux
+      image: frr-flowspec:10.2.6
+      mgmt-ipv4: 10.0.0.7
+      binds:
+        - ./conf/frr-daemons:/etc/frr/daemons
+        - ./conf/rtbh.conf:/etc/frr/frr.conf
+      exec:
+        - ip link set dev eth1 mtu 1500
+        - ip link set dev eth2 mtu 1500
+
+    inet-ceos:
+      kind: arista_ceos
+      image: ceos:4.36.0.1F
+      mgmt-ipv4: 10.0.0.8
+      startup-config: ./conf/inet-ceos.conf
+
+    bird3-1:
+      kind: linux
+      image: bird3:3.3.1
+      mgmt-ipv4: 10.0.0.9
+      dns:
+        servers:
+          - 127.0.0.1
+        options:
+          - ndots:1
+      binds:
+        - ./conf/bird3_1.conf:/etc/bird/bird.conf
+        - ./conf/bird3-flowspec.conf:/etc/bird/flowspec.conf
+        - ./conf/dnsmasq.conf:/etc/dnsmasq.conf
+        - ./conf/dns-healthcheck.sh:/usr/local/bin/dns-healthcheck.sh
+        - ./conf/bird3-1.sh:/root/bird3-1.sh
+      exec:
+        - bash /root/bird3-1.sh
+
+    bird3-2:
+      kind: linux
+      image: bird3:3.3.1
+      mgmt-ipv4: 10.0.0.10
+      dns:
+        servers:
+          - 127.0.0.1
+        options:
+          - ndots:1
+      binds:
+        - ./conf/bird3_2.conf:/etc/bird/bird.conf
+        - ./conf/bird3-flowspec.conf:/etc/bird/flowspec.conf
+        - ./conf/dnsmasq.conf:/etc/dnsmasq.conf
+        - ./conf/dns-healthcheck.sh:/usr/local/bin/dns-healthcheck.sh
+        - ./conf/bird3-2.sh:/root/bird3-2.sh
+      exec:
+        - bash /root/bird3-2.sh
+
+    attacker:
+      kind: linux
+      image: nicolaka/netshoot:v0.16
+      mgmt-ipv4: 10.0.0.11
+      dns:
+        servers:
+          - 10.10.10.10
+      binds:
+        - ./conf/send-dns-scapy.py:/root/send-dns-scapy.py
+        - ./conf/continuous_dns_test.py:/root/continuous_dns_test.py
+        - ./conf/attacker.sh:/root/attacker.sh
+      exec:
+        - bash /root/attacker.sh
+
+    inet-frr1:
+      kind: linux
+      image: frr-flowspec:10.2.6
+      mgmt-ipv4: 10.0.0.12
+      binds:
+        - ./conf/frr-daemons:/etc/frr/daemons
+        - ./conf/inet-frr1.conf:/etc/frr/frr.conf
+      exec:
+        - ip link set dev eth1 mtu 1500
+        - ip link set dev eth2 mtu 1500
+
+    inet-frr2:
+      kind: linux
+      image: frr-flowspec:10.2.6
+      mgmt-ipv4: 10.0.0.13
+      binds:
+        - ./conf/frr-daemons:/etc/frr/daemons
+        - ./conf/inet-frr2.conf:/etc/frr/frr.conf
+      exec:
+        - ip link set dev eth1 mtu 1500
+        - ip link set dev eth2 mtu 1500
+    
+    users-frr1:
+      kind: linux
+      image: ghcr.io/srl-labs/network-multitool:latest
+      mgmt-ipv4: 10.0.0.14
+      dns:
+        servers:
+          - 10.10.10.10
+      exec:
+        - ip addr add 172.17.1.2/24 dev eth1
+        - ip link set dev eth1 mtu 1500
+        - ip route replace default via 172.17.1.1
+    
+    users-frr2:
+      kind: linux
+      image: ghcr.io/srl-labs/network-multitool:latest
+      mgmt-ipv4: 10.0.0.15
+      dns:
+        servers:
+          - 10.10.10.10
+      exec:
+        - ip addr add 172.18.1.2/24 dev eth1
+        - ip link set dev eth1 mtu 1500
+        - ip route replace default via 172.18.1.1
+
+  links:
+    - endpoints: ["ios-rr1:Ethernet0/1", "junos-rr2:eth1"]
+    - endpoints: ["ios-rr1:Ethernet0/2", "ios-pe1:Ethernet0/2"]
+    - endpoints: ["ios-rr1:Ethernet0/3", "frr-ed1:eth3"]
+    - endpoints: ["ios-rr1:Ethernet1/1", "rtbh:eth1"]
+    - endpoints: ["junos-rr2:eth2", "junos-pe2:eth2"]
+    - endpoints: ["junos-rr2:eth3", "frr-ed2:eth3"]
+    - endpoints: ["junos-rr2:eth4", "rtbh:eth2"]
+    - endpoints: ["frr-ed1:eth2", "frr-ed2:eth2"]
+    - endpoints: ["frr-ed1:eth1", "ios-pe1:Ethernet0/1"]
+    - endpoints: ["frr-ed1:eth4", "inet-ceos:eth1"]
+    - endpoints: ["frr-ed1:eth5", "inet-frr1:eth1"]
+    - endpoints: ["frr-ed2:eth1", "junos-pe2:eth1"]
+    - endpoints: ["frr-ed2:eth4", "inet-ceos:eth2"]
+    - endpoints: ["frr-ed2:eth5", "inet-frr2:eth1"]
+    - endpoints: ["ios-pe1:Ethernet0/3", "junos-pe2:eth3"]
+    - endpoints: ["ios-pe1:Ethernet1/1", "bird3-1:eth1"]
+    - endpoints: ["junos-pe2:eth4", "bird3-2:eth1"]
+    - endpoints: ["inet-ceos:eth3", "attacker:eth1"]
+    - endpoints: ["inet-frr1:eth2", "users-frr1:eth1"]
+    - endpoints: ["inet-frr2:eth2", "users-frr2:eth1"]
