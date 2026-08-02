@@ -87,7 +87,7 @@ for node in nodes:
         user = SSH_USERS[kind]
 
         cmd = (
-            f"ct ssh "
+            f"ssh "
             f"-o StrictHostKeyChecking=no "
             f"-o UserKnownHostsFile=/dev/null "
             f"{user}@{ip}"
@@ -95,7 +95,7 @@ for node in nodes:
 
     else:
         # Every other node is treated as a Linux container
-        cmd = f"ct docker exec -it {full_name} bash"
+        cmd = f"docker exec -it {full_name} bash"
 
     print(f"{session:<20} -> {cmd}")
 

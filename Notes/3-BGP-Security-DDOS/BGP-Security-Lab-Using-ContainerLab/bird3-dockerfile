@@ -1,0 +1,48 @@
+FROM debian:trixie
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install required packages
+RUN apt update && apt install -y \
+    apt-transport-https \
+    ca-certificates \
+    wget \
+    gnupg \
+    python3 \
+    dnsmasq \
+    dnsutils \
+    bash \
+    iproute2 \
+    iputils-ping \
+    tcpdump \
+    procps \
+    curl \
+    net-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add CZ.NIC Labs signing key
+RUN wget -O /usr/share/keyrings/cznic-labs-pkg.gpg \
+    https://pkg.labs.nic.cz/gpg
+
+# Add BIRD3 repository
+RUN echo "deb [signed-by=/usr/share/keyrings/cznic-labs-pkg.gpg] https://pkg.labs.nic.cz/bird3 trixie main" \
+    > /etc/apt/sources.list.d/cznic-labs-bird3.list
+
+# Install BIRD3
+RUN apt update && apt install -y bird3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create required directories
+RUN mkdir -p \
+    /run/bird \
+    /var/log/bird \
+    /var/log/dnsmasq \
+    /etc/bird
+
+# Verify installation
+RUN bird --version && \
+    dnsmasq --version && \
+    dig -v && \
+    python3 --version
+
+CMD ["/bin/bash"]
