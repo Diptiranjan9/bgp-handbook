@@ -20,7 +20,7 @@ The primary function of a BGP speaking system is to exchange network reachabilit
 |---|---|
 | Standard | Open standards-based (RFC 4271) |
 | Protocol Class | Path Vector Protocol |
-| Routing Category | Exterior Gateway Protocol (EGP-class) — routes *between* ASes, not within one |
+| Routing Category | Exterior Gateway Protocol (EGP-class) — routes *between* ASes |
 | Transport | TCP, port 179 |
 | Decision Basis | Prefix attributes (not link cost/bandwidth) |
 
