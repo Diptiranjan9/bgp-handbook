@@ -14,7 +14,7 @@
 
 ### Lab Topology
 
-![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-sp-lab.png)
+![](../../Snapshots/bgp-sp-lab.png)
 
 ### Configuration
 
