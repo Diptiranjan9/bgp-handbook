@@ -6,7 +6,7 @@
 
 ### Topology 
 
-![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-sp-lab.png)
+![](../../snapshots/bgp-sp-lab.png)
 
 - **inet-ceos** = Arista cEOS, AS 65002, dual-homed to AS 65000 via two eBGP links (10.0.4.1 → ios-ed1, 10.0.4.5 → junos-ed2)
 - **ios-ed1** = Cisco IOS, AS 65000

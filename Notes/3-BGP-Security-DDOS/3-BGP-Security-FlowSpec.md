@@ -141,7 +141,7 @@ flowchart TD
 
 ### Network Diagram
 
-![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-flowspec.png)
+![](../../snapshots/bgp-flowspec.png)
 
 ---
 

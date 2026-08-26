@@ -131,7 +131,7 @@ R1#show ip cef 100.100.100.0/24
 
 ### Network Diagram
 
-![BGP SP Lab — RTBH](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-sp-lab-rtbh.png)
+![BGP SP Lab — RTBH](../../snapshots/bgp-sp-lab-rtbh.png)
 
 ---
 

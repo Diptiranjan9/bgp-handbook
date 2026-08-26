@@ -160,7 +160,7 @@ Common internal tagging categories:
 
 ### Lab Topology
 
-![](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-sp-lab.png)
+![](../../snapshots/bgp-sp-lab.png)
 
 ---
 

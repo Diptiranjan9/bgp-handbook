@@ -68,7 +68,7 @@ S/RTBH reuses the same foundational BGP mechanics covered in [[BGP Security — 
 
 ### Network Diagram
 
-![BGP SP Lab — RTBH](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-sp-lab-rtbh.png)
+![BGP SP Lab — RTBH](../../snapshots/bgp-sp-lab-rtbh.png)
 
 
 ---
@@ -694,7 +694,7 @@ flowchart LR
 
 ## FRR S-RTBH Full Lab
 
-![BGP Flowspec Lab](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-flowspec.png)
+![BGP Flowspec Lab](../../snapshots/bgp-flowspec.png)
 
 - Suppose an attacker launches a DoS attack targeting a BIRD3 server that provides DNS services. To mitigate the attack, **Source-Based RTBH (S/RTBH)** should be implemented on the ISP's RTBH router.
 - Attacker IP is `172.16.1.2` and DNS server IP is `10.10.10.10`.
