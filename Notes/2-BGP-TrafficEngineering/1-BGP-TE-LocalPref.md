@@ -14,7 +14,7 @@
 
 ### Lab Topology
 
-![](../../Snapshots/bgp-sp-lab.png)
+![](../../snapshots/bgp-sp-lab.png)
 
 ### Configuration
 
