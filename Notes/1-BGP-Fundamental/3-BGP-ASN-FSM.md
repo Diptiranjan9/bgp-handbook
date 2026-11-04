@@ -1,65 +1,106 @@
-## ASN & BGP Neighbor States
+## ASN & BGP Neighbor States (FSM)
 
-> 💡 **TL;DR:** ASNs were originally 2-byte (0–65535), now extended to 4-byte (RFC 6793) to handle exhaustion. BGP neighbor states progress Idle → Connect → Active → OpenSent → OpenConfirm → Established, with all failures dropping straight back to Idle.
-
----
-
-### Autonomous System Number (ASN)
-
-- Originally a **2-byte** number: range **0 – 65535**
-- **Public ASNs:** 1 – 64495 (assigned by IANA/RIRs for global use)
-- **Reserved for documentation/sample code:** 64496 – 64511 (RFC 5398)
-- **Private ASNs:** 64512 – 65534 (for internal/local use, not advertised to the internet)
-- **Reserved:** 0 and 65535
-
-> ⚠️ **Correction:** The commonly quoted "Public 1–64511 / Private 64512–65535" splits things slightly imprecisely — 64496–64511 is actually reserved for documentation (RFC 5398), and 65535 is reserved, not usable as a private ASN.
-
-- Newer implementations use a **4-byte ASN field**, standardized in **RFC 6793** (this obsoleted the original RFC 4893).
-- 4-byte ASN range: **0 – 4,294,967,295** (asplain notation), or written in **asdot** notation as `x.y` where x and y each range 0–65535 (e.g., `1.0` = 65536 in asplain).
-
----
-
-### BGP Neighbor States (FSM)
-
-| State | Description |
-|---|---|
-| **Idle** | Initial state — BGP refuses incoming connections, waiting for a Start event |
-| **Connect** | BGP speaker is **waiting for the TCP connection to complete** |
-| **Active** | BGP speaker is **trying to initiate** a TCP connection with the peer |
-| **OpenSent** | Sent an OPEN message, waiting to hear back from the neighbor |
-| **OpenConfirm** | OPEN messages already exchanged; waiting for a KEEPALIVE |
-| **Established** | Full peering relationship — routes can be exchanged |
-
-> ⚠️ **Correction:** Connect and Active are commonly mixed up. Per RFC 4271:
-> - **Connect** = waiting for the TCP handshake to **finish** (connection already initiated)
-> - **Active** = actively **trying to initiate** a new TCP connection (typically after a previous attempt failed)
+> 💡 **TL;DR:** ASNs were originally 2-byte (16-bit) numbers and were extended to 4-byte (32-bit) numbers through RFC 6793 to address ASN exhaustion.
 >
-> It's counterintuitive that "Active" is the retry/failure-recovery state rather than the first attempt — worth memorizing deliberately since the naming doesn't hint at it.
+> BGP neighbor establishment follows six FSM states: Idle → Connect → Active → OpenSent → OpenConfirm → Established.
+>
+> Connect and Active are TCP connection establishment states. Their transitions depend on TCP events and retry timers. Protocol errors and session failures can trigger transitions back to Idle.
 
 ---
 
-### BGP FSM Diagram
+### 1. Autonomous System Numbers (ASN)
+
+| ASN range | Size | Purpose | Defined in |
+|---|---|---|---|
+| 0 | 16-bit | Reserved | IANA special-purpose registry |
+| 1 – 23455 | 16-bit | Public (assigned via RIRs) | IANA AS registry |
+| **23456** | 16-bit | **AS_TRANS** (placeholder for 4-byte ASNs) | RFC 6793 |
+| 23457 – 64495 | 16-bit | Public (assigned via RIRs) | IANA AS registry |
+| 64496 – 64511 | 16-bit | Documentation / sample code | RFC 5398 |
+| 64512 – 65534 | 16-bit | **Private use** (1023 ASNs) | RFC 6996 |
+| 65535 | 16-bit | Reserved | RFC 7300 |
+| 65536 – 65551 | 32-bit | Documentation / sample code | RFC 5398 |
+| 65552 – 131071 | 32-bit | Reserved | IANA AS registry |
+| 131072 – 4199999999 | 32-bit | Public | IANA AS registry |
+| 4200000000 – 4294967294 | 32-bit | **Private use** (94,967,295 ASNs) | RFC 6996 |
+| 4294967295 | 32-bit | Reserved | RFC 7300 |
+
+> ⚠️ **Gotcha:** The old rule of thumb "public 1–64511 / private 64512–65535" is wrong in three ways: 23456 is reserved, 64496–64511 is documentation, and 65535 is reserved (the private block ends at 65534). It also ignores the 4-byte private block.
+
+---
+
+### 2. ASN Notation (RFC 5396)
+
+| Notation | Format | Example (ASN 196613) |
+|---|---|---|
+| **asplain** | Single decimal number | `196613` |
+| **asdot+** | Always `high.low` | `3.5` |
+| **asdot** | Plain decimal below 65536, `high.low` from 65536 up | `3.5` (but `64512` stays `64512`) |
+
+Conversion: `asplain = high × 65536 + low`
+
+- `65536` → `1.0`
+- `196613` → 196613 ÷ 65536 = 3 remainder 5 → `3.5`
+- `4200000000` (first 4-byte private) → `64086.59904`
+- `4294967294` (last 4-byte private) → `65535.65534`
+
+---
+
+### 3. 4-Byte ASN on the Wire (RFC 6793)
+
+| Where | What happens |
+|---|---|
+| OPEN "My Autonomous System" field | Still **2 octets**. A speaker without a 2-byte ASN puts **23456 (AS_TRANS)** here |
+| OPEN capability | New "four-octet AS number" capability carries the **real 4-byte ASN** |
+| NEW ↔ NEW speakers | Use the ASN from the capability, ignore the "My AS" field |
+| NEW ↔ OLD speakers | The old router sees its peer as AS 23456; real path info travels in **AS4_PATH** (attribute type 17) and **AS4_AGGREGATOR** |
+
+RFC 6793 **obsoletes RFC 4893** and updates RFC 4271.
+
+> ⚠️ **Gotcha:** When peering with an old 2-byte-only router, the old side must be configured with remote-as **23456**, because that is the ASN it sees in your OPEN message.
+
+---
+
+### 4. BGP Neighbor States
+
+| State | What BGP is doing |
+|---|---|
+| **Idle** | Initial state. Refuses all incoming BGP connections. Waits for a Start event |
+| **Connect** | Waiting for the TCP connection to complete (outgoing attempt in progress) |
+| **Active** | Trying to acquire a peer by **listening for and accepting** a TCP connection |
+| **OpenSent** | TCP is up, OPEN sent, waiting for the peer's OPEN |
+| **OpenConfirm** | OPENs exchanged, waiting for a KEEPALIVE |
+| **Established** | Peering is up; UPDATE, KEEPALIVE and NOTIFICATION messages are exchanged |
+
+> ⚠️ **Gotcha — Active is not "actively initiating":** The TCP attempt is started on the way **into Connect**. In Active, the router listens, and when the ConnectRetryTimer expires it goes back to Connect and tries again. A session flapping between Connect and Active usually means a TCP transport problem (no route, ACL, wrong source address, peer not configured).
+
+> ⚠️ **Gotcha — real devices deviate from the RFC:** vendor state names and transitions don't always map 1:1 to RFC 4271, so use the RFC as the reference model and verify behavior with debugs on the actual platform.
+
+---
+
+### 5. FSM Diagram
 
 ```mermaid
 flowchart TD
-    Idle -->|"Start (Manual/Automatic)\nInit resources, initiate TCP connection"| Connect
+    Idle -->|"Start event<br/>init resources, start ConnectRetryTimer,<br/>initiate TCP, listen"| Connect
+    Idle -->|"Start with passive TCP establishment<br/>listen only"| Active
 
-    Connect -->|"TCP connection succeeds\nSend OPEN"| OpenSent
-    Connect -->|"ConnectRetryTimer expires\n(TCP connection failed)"| Active
-    Connect -->|"Error / Stop"| Idle
+    Connect -->|"TCP succeeds<br/>send OPEN, HoldTimer = large value"| OpenSent
+    Connect -->|"TCP fails<br/>restart ConnectRetryTimer"| Active
+    Connect -->|"ConnectRetryTimer expires<br/>restart timer, new TCP attempt"| Connect
 
-    Active -->|"TCP connection succeeds\nSend OPEN"| OpenSent
-    Active -->|"ConnectRetryTimer expires\nRetry TCP connection"| Connect
-    Active -->|"Error / Stop"| Idle
+    Active -->|"TCP succeeds<br/>send OPEN"| OpenSent
+    Active -->|"ConnectRetryTimer expires<br/>initiate TCP, keep listening"| Connect
+    Active -->|"TCP fails"| Idle
 
-    OpenSent -->|"Receive valid OPEN\nSend KEEPALIVE"| OpenConfirm
-    OpenSent -->|"Error / Notification / Stop"| Idle
+    OpenSent -->|"Valid OPEN received<br/>send KEEPALIVE, negotiate HoldTime"| OpenConfirm
+    OpenSent -->|"OPEN error / Hold Timer expires / Stop<br/>send NOTIFICATION"| Idle
 
-    OpenConfirm -->|"Receive KEEPALIVE"| Established
-    OpenConfirm -->|"Error / Notification /\nHold Timer expiry / Stop"| Idle
+    OpenConfirm -->|"KEEPALIVE received"| Established
+    OpenConfirm -->|"Hold Timer expires / NOTIFICATION /<br/>error / Stop"| Idle
 
-    Established -->|"Exchange UPDATE, KEEPALIVE,\nROUTE-REFRESH"| Established
-    Established -->|"Error / Notification received /\nHold Timer expiry / Stop"| Idle
+    Established -->|"UPDATE / KEEPALIVE exchange"| Established
+    Established -->|"Hold Timer expires / NOTIFICATION /<br/>error / Stop"| Idle
 
     classDef idleStyle fill:#f8d7da,stroke:#c0392b,stroke-width:2px,color:#000
     classDef transStyle fill:#fff3cd,stroke:#e0a800,stroke-width:2px,color:#000
@@ -70,10 +111,80 @@ flowchart TD
     class Established establishedStyle
 ```
 
-**Notes:**
-- No "Closing" state in RFC 4271 — all failures go directly back to **Idle**
-- Connect ↔ Active retry loop exists via the **ConnectRetryTimer**
-- ROUTE-REFRESH is an extension (RFC 2918), not in the base spec
+> 📝 This shows the principal transitions only. RFC 4271 defines **28 events**; only ManualStart (1) and ManualStop (2) are mandatory administrative events, and the rest depend on optional session attributes.
+
+---
+
+### 6. Timers That Drive the FSM
+
+| Timer | Role |
+|---|---|
+| **ConnectRetryTimer** | Mandatory. Drives the Connect ↔ Active retry loop |
+| **HoldTimer** | Set to a large value in OpenSent, then to the negotiated value. If no KEEPALIVE, UPDATE or NOTIFICATION arrives in time → NOTIFICATION (Hold Timer Expired) and Idle |
+| **KeepaliveTimer** | Controls when KEEPALIVEs are sent |
+| **DelayOpenTimer** *(optional)* | Delays sending OPEN so the peer can send its OPEN first |
+| **IdleHoldTimer** *(optional)* | Holds a peer in Idle after repeated flaps (peer-oscillation damping) |
+
+---
+
+### 7. CCIE-Depth: Maths, Corner Cases, Interactions
+
+**Hold time and keepalive maths**
+- Negotiated HoldTime = **smaller** of the two configured values.
+- KEEPALIVE interval is at most **one third** of the Hold Time, and never more often than once per second.
+- Negotiated Hold Time of **0** → no periodic KEEPALIVEs at all.
+- Example: local 180 s, remote 90 s → negotiated 90 s, KEEPALIVE every 30 s.
+
+> ⚠️ **Gotcha:** A Hold Time must be 0 or at least 3 seconds. An implementation **must reject** 1 or 2 seconds (OPEN error, subcode "Unacceptable Hold Time").
+
+**Connection collision (both sides connect at once)**
+- Two parallel TCP connections can form between the same pair of speakers.
+- Rule: compare BGP Identifiers as 4-octet unsigned integers and keep the connection **initiated by the speaker with the higher BGP Identifier**. The loser is closed with a NOTIFICATION (Cease).
+- Collision **cannot be detected** while connections are in Idle, Connect or Active; the check happens on receipt of an OPEN, against connections in OpenConfirm.
+- A collision with an existing **Established** session closes the **new** connection, unless configured otherwise.
+
+**Peer-oscillation damping (optional)**
+- With damping enabled, IdleHoldTime grows when a peer keeps flapping. The RFC's example: 10 connect/disconnect cycles within 5 minutes raise IdleHoldTime from 0 to 120 s.
+
+**Interactions to remember**
+- NOTIFICATION error codes tied to the FSM: **4** Hold Timer Expired, **5** Finite State Machine Error, **6** Cease.
+- A NOTIFICATION always closes the connection, so the next state is always Idle.
+- Passive-mode peers (listen only) go Idle → **Active** directly, skipping Connect.
+- 4-byte ASNs change nothing in the FSM; the ASN compatibility is negotiated inside the OPEN/capability exchange (section 3).
+
+---
+
+### 8. Quick Recap
+
+| Topic | Remember |
+|---|---|
+| Private ASNs | 64512–65534 and 4200000000–4294967294 |
+| Reserved ASNs | 0, 23456 (AS_TRANS), 65535, 4294967295 |
+| Documentation ASNs | 64496–64511 and 65536–65551 |
+| ASN size | 32 bits; "My AS" field in OPEN is 2 octets, so AS_TRANS + capability |
+| Connect | Waiting for TCP to complete |
+| Active | Listening / accepting; retries via timer → Connect |
+| Connect → Active trigger | TCP **failure**, not timer expiry |
+| ConnectRetryTimer expiry | Connect stays in Connect; Active goes to Connect |
+| All failures | Back to Idle (no "Closing" state) |
+| Hold / Keepalive | Hold = min(local, remote); Keepalive ≤ Hold ÷ 3 |
+
+---
+
+### References
+
+**Standards**
+- [RFC 4271 — A Border Gateway Protocol 4 (BGP-4)](https://www.rfc-editor.org/rfc/rfc4271.html) (§4.2 OPEN, §6 errors, §6.8 collision, §8 FSM)
+- [RFC 6793 — BGP Support for Four-Octet AS Number Space](https://datatracker.ietf.org/doc/rfc6793) (obsoletes RFC 4893)
+- [RFC 5396 — Textual Representation of AS Numbers](https://datatracker.ietf.org/doc/html/rfc5396)
+- [RFC 5398 — AS Number Reservation for Documentation Use](https://datatracker.ietf.org/doc/html/rfc5398)
+- [RFC 6996 — AS Reservation for Private Use](https://www.rfc-editor.org/rfc/rfc6996)
+- [IANA — Autonomous System (AS) Numbers](https://www.iana.org/assignments/as-numbers/as-numbers.xhtml)
+- [IANA — Special-Purpose AS Numbers](https://www.iana.org/assignments/iana-as-numbers-special-registry/iana-as-numbers-special-registry.xhtml)
+
+**Vendor documentation**
+- [Fortinet — BGP Neighbor Adjacency States](https://community.fortinet.com/t5/FortiGate/Technical-Tip-BGP-Neighbor-Adjacency-States/ta-p/208989)
+- [Nokia 7750 SR — BGP Session States](https://infocenter.nokia.com/public/7750SR222R1A/topic/com.nokia.Unicast_Guide/bgp_session_sta-ai9exj5yii.html)
 
 #### Sample Router Output
 

@@ -49,7 +49,7 @@ Fields: Version, My AS, Hold Time, BGP Identifier, Optional Parameters.
 
 > ⚠️ **Gotcha:** The interface must be **active/up** to be considered — a configured-but-down loopback with a higher IP won't win Router ID selection.
 
-![BGP Open Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-openmsg.png)
+![BGP Open Message](../../snapshots/bgp-openmsg.png)
 
 ---
 
@@ -64,7 +64,7 @@ Fields, in order:
 
 > 📝 **Note:** A single UPDATE message can carry withdrawals and new advertisements together, or just one of the two — it doesn't require both every time.
 
-![BGP Update Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-updatemsg.png)
+![BGP Update Message](../../snapshots/bgp-updatemsg.png)
 
 ---
 
@@ -75,7 +75,7 @@ Fields: Error Code, Error Subcode, Data.
 - Sent when BGP detects an error condition (e.g., malformed message, hold timer expiry, FSM error).
 - **Terminates the session immediately** after being sent/received — this is what triggers the transition back to Idle in the BGP FSM.
 
-![BGP Notification Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-notificationmsg.png)
+![BGP Notification Message](../../snapshots/bgp-notificationmsg.png)
 
 ---
 
@@ -87,7 +87,7 @@ Fields: Error Code, Error Subcode, Data.
 
 > 💡 **Tip:** Hold Timer and KEEPALIVE interval are negotiated during the OPEN exchange — both sides take the **lower** of their two configured Hold Timer values.
 
-![BGP Keepalive Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-keepmsg.png)
+![BGP Keepalive Message](../../snapshots/bgp-keepmsg.png)
 
 ---
 
@@ -97,4 +97,4 @@ Fields: Error Code, Error Subcode, Data.
 - Requires the **Route Refresh capability** to be negotiated in the OPEN message.
 - Common use case: applying a new inbound route-map/policy without a hard reset (`clear ip bgp * soft in` relies on this).
 
-![BGP Route Refresh Message](https://github.com/Diptiranjan9/bgp-handbook/blob/main/snapshots/bgp-refreshmsg.png)
+![BGP Route Refresh Message](../../snapshots/bgp-refreshmsg.png)
